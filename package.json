@@ -8,7 +8,10 @@
     "url": "https://github.com/Larney11/mock-fetch-api.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rimraf lib",
+    "lint": "eslint .",
+    "cover": "jest --coverage",
+    "test": "npm run lint && npm run cover"
   },
   "keywords": [
     "mock-fetch-api",
@@ -27,5 +30,15 @@
     "es6-promise": "^3.2.1",
     "isomorphic-fetch": "^2.2.1",
     "object-extend": "^0.5.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "cross-env": "^5.1.3",
+    "eslint": "^5.16.0",
+    "handlebars": "4.5.0",
+    "jest-cli": "^23.6.0",
+    "mocha": "^6.1.3",
+    "nyc": "^13.3.0",
+    "rimraf": "^2.6.2"
   }
 }

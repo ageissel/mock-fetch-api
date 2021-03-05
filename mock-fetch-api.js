@@ -16,79 +16,108 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 */
 
+
+/** MockFetch test support tool
+ *
+ *  Copyright (c) 2015 Adrian Geissel. All Rights Reserved.
+ *  No unauthorised use without written Licence Agreement
+ */
+
 (function(global) {
 
-require('es6-promise').polyfill();
 require('isomorphic-fetch');
-var extend = require('object-extend');
 
 var conditions = [];
 var failNextCall = false;
 
-
 global.fetch = function(uri, options) {
 
-   var options = extend({
+  if(uri === 'isMocked') { return true; }
+
+   options = Object.assign({
       method: 'GET',
       headers: null,
    }, options || {});
 
-   return new Promise(function(resolve, reject) {
+   return new Promise(function(FULFILL, REJECT) {
 
-      if(failNextCall) {
+     process.nextTick(()=>{
 
-         failNextCall = false;
-         return reject("as requested");
-      }
+       try {
 
-      for (var ii = 0; ii < conditions.length; ii++) {
+          if(failNextCall) {
+             failNextCall = false;
 
-         var criteria = conditions[ii];
+             return REJECT ? REJECT(new Error("failing, as requested")) : null;
+          }
 
-         // Compare methods
-         if(criteria.method == options.method && criteria.uri == uri) {
+          for (var ii = 0; ii < conditions.length; ii++) {
 
-            // Compare headers
-            for(var jj=0; jj<criteria.headers.length; jj++) {
-               var expectedHeader = criteria.headers[jj];
+             var criteria = conditions[ii];
 
-               if(!options.headers || !options.headers.has(expectedHeader.header)
-                     || options.headers.get(expectedHeader.header) != expectedHeader.value) {
+             if(criteria.method === options.method && criteria.uri === uri) {
 
-                  if(expectedHeader.elseResponse) {
+                // check that we have the expected headers
+                for(var jj=0; jj<criteria.headers.length; jj++) {
+                  var expectedHeader = criteria.headers[jj];
+console.log(expectedHeader, options);
 
-                     return resolve(new Response("", {
+                  if(!options.headers || !options.headers.has(expectedHeader.header) || options.headers.get(expectedHeader.header) != expectedHeader.value) {
+
+                    if(expectedHeader.elseResponse) {
+                      return FULFILL(new Response("", {
                         status: expectedHeader.elseResponse.status,
-                        statusText: expectedHeader.elseResponse.statusText
-                     }));
+                        statusText: expectedHeader.elseResponse.statusText || ''
+                      }));
+                    }
 
+//console.log(criteria);
+                    return FULFILL(new Response("", { status: 404, statusText: "Not Found" }));
                   }
+                }
 
-                  return resolve(new Response("", {
-                     status: 404,
-                     statusText: "Not Found"
+                conditions[ii].calledCount++;
+
+                if(!!criteria.respondOnlyOnceCB && criteria.calledCount>1) {
+                  if(typeof criteria.respondOnlyOnceCB === 'function') {
+                    criteria.respondOnlyOnceCB(criteria);
+                  }
+                  return REJECT ? REJECT(new Error("uri called more than once")) : null;
+
+                } else {
+
+                  if(criteria.removeWhenCalled) {
+                    conditions.splice(ii,1);
+                  }
+                  return FULFILL(new Response(criteria.response.jsonData, {
+                     status: criteria.response.status,
+                     headers: criteria.response.headers
                   }));
+                }
 
-               }
-            }
+             }
+          }
+//console.log(uri, options, conditions);
+          return FULFILL(new Response("", { status: 404, statusText: "Not Found" }));
+        }
+        catch(ex) {
 
-            return resolve(new Response(criteria.response.jsonData, {
-               status: criteria.response.status
-            }));
+//          console.log('Unexpected Exception: ', ex);
 
-         }
-      }
+          return REJECT ? REJECT(new Error(ex.message)) : null;
+        }
 
-      return resolve(new Response("", {
-         status: 404,
-         statusText: "Not Found"
-      }));
+      });
 
    });
-}
+};
 
 
 module.exports = {
+
+   clear: function() { conditions = []; },
+
+   inspect: function() { return conditions; },
 
    when: function(method, uri) {
 
@@ -98,7 +127,9 @@ module.exports = {
          uri: uri,
          headers: [],
          response: null,
-
+         respondOnlyOnceCB: null,
+         calledCount: 0,
+         removeWhenCalled: false,
 
          withExpectedHeader: function(header, value) {
 
@@ -111,41 +142,52 @@ module.exports = {
             return condition;
          },
 
-
          otherwiseRespondWith: function(status, statusText) {
 
             if(condition.headers.length > 0) {
                condition.headers[condition.headers.length-1].elseResponse = {
                   status: status,
-                  statusText: statusText,
+                  statusText: statusText || '',
                };
                return condition;
             }
             throw "no preceding header set";
          },
 
-
-         respondWith: function(status, data) {
+         respondWith: function(status, data, headers) {
 
             condition.response = {
                status: status,
-               jsonData: data
+               statusText: '--',
+               jsonData: data,
+               headers: new Headers(headers)
             };
 
             conditions.push(condition);
+            return condition;
+         },
 
-            return true;
+         respondOnlyOnce: function(cb) {
+            if(conditions.length > 0) {
+              conditions[conditions.length-1].respondOnlyOnceCB = cb;
+              return condition;
+            }
+            throw "respondWith() must be called first";
+         },
+
+         andThenRemove: function() {
+           if(conditions.length > 0) {
+             conditions[conditions.length-1].removeWhenCalled = true;
+             return condition;
+           }
+           throw "respondWith() must be called first";
          }
-      };
 
+      };
       return condition;
    },
 
-
-   failNextCall: function () {
-
-      failNextCall = true;
-   }
+   failNextCall: function () { failNextCall = true; }
 
 };
 

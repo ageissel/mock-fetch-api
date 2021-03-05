@@ -20,12 +20,12 @@ jest.autoMockOff();
 
 describe('MockFetch test', () =>  {
 
-   pit("can set a condition which is returned by fetch", () => {
+   it("can set a condition which is returned by fetch", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com').respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com').then((response) => {
+      await fetch('http://mydomain.com').then((response) => {
          return response.json();
 
       }).then((data) => {
@@ -34,12 +34,12 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("can set a condition which is returned by fetch", () => {
+   it("can set a condition which is returned by fetch", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com').respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com').then((response) => {
+      await fetch('http://mydomain.com').then((response) => {
          response.json().then((data) => {
             expect(data).toBe('Hello World');
          });
@@ -47,24 +47,24 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("test connection with default method GET", () => {
+   it("test connection with default method GET", async () => {
 
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com').respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com', {}).then((response) => {
+      await fetch('http://mydomain.com', {}).then((response) => {
          expect(response.status).toBe(200);
       });
    });
 
 
-   pit("only responds when matched correctly", () => {
+   it("only responds when matched correctly", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com').respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com', { method: 'PUT'}).then((response) => {
+      await fetch('http://mydomain.com', { method: 'PUT'}).then((response) => {
 
          expect(response.status).toBe(404);
          expect(response.statusText).toBe('Not Found');
@@ -72,7 +72,7 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("also checks for an expected header value", () => {
+   it("also checks for an expected header value", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com')
@@ -80,7 +80,7 @@ describe('MockFetch test', () =>  {
          .otherwiseRespondWith(401, "Not Authorized")
          .respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com', { method: 'GET', headers: new Headers({
+      await fetch('http://mydomain.com', { method: 'GET', headers: new Headers({
          'X-AuthToken':'1234'
       })}).then((response) => {
          expect(response.status).toBe(200);
@@ -88,14 +88,14 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("fails when expected header is not set", () => {
+   it("fails when expected header is not set", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com')
          .withExpectedHeader({'X-AuthToken':'1234'}).otherwiseRespondWith(401, "Not Authorized")
          .respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com', { method: 'GET'}).then((response) => {
+      await fetch('http://mydomain.com', { method: 'GET'}).then((response) => {
 
          expect(response.status).toBe(401);
          expect(response.statusText).toBe('Not Authorized');
@@ -103,14 +103,14 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("fails when expected header is has the wrong value", () => {
+   it("fails when expected header is has the wrong value", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com')
          .withExpectedHeader('X-AuthToken','1234').otherwiseRespondWith(401, "Not Authorized")
          .respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com', { method: 'GET', headers: new Headers({
+      await fetch('http://mydomain.com', { method: 'GET', headers: new Headers({
          'X-AuthToken':'4321'
       })}).then((response) => {
          expect(response.status).toBe(401);
@@ -119,7 +119,7 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("can check for multiple expected headers", () => {
+   it("can check for multiple expected headers", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com')
@@ -127,7 +127,7 @@ describe('MockFetch test', () =>  {
          .withExpectedHeader('BANANA','8757').otherwiseRespondWith(401, "Not Authorized")
          .respondWith(200, '"Hello World"');
 
-      return fetch('http://mydomain.com', { method: 'GET', headers: new Headers({
+      await fetch('http://mydomain.com', { method: 'GET', headers: new Headers({
          'X-AuthToken':'1234',
          'BANANA':'8757'
       })}).then((response) => {
@@ -137,14 +137,14 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("rejects the promise when simulating a failed network connection", () => {
+   it("rejects the promise when simulating a failed network connection", async () => {
       var MockFetch  = require('../mock-fetch-api.js');
 
       MockFetch.when('GET', 'http://mydomain.com')
          .respondWith(200, '"Hello World"');
 
       MockFetch.failNextCall();
-      return fetch('http://mydomain.com').then((response) => {
+      await fetch('http://mydomain.com').then((response) => {
          expect(false).toBe(true);
       }, (error) => {
          expect(true).toBe(true);
@@ -152,7 +152,7 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("rejects the promise ONLY for the next call when simulating a failed network connection", () => {
+   it("rejects the promise ONLY for the next call when simulating a failed network connection", async () => {
 
       var MockFetch  = require('../mock-fetch-api.js');
 
@@ -163,7 +163,7 @@ describe('MockFetch test', () =>  {
       fetch('http://mydomain.com').then((response) => { }, (error) => { });
 
       // should then succeed again...
-      return fetch('http://mydomain.com').then((response) => {
+      await fetch('http://mydomain.com').then((response) => {
          expect(response.status).toBe(200);
       }, (error) => {
          expect(false).toBe(true);
@@ -171,7 +171,7 @@ describe('MockFetch test', () =>  {
    });
 
 
-   pit("can match on the uploaded body", () => {
+   it("can match on the uploaded body", async () => {
 
       var MockFetch  = require('../mock-fetch-api.js');
 
@@ -179,7 +179,7 @@ describe('MockFetch test', () =>  {
          .respondWith(200, '"Hello World"');
 
       MockFetch.failNextCall();
-      return fetch('http://mydomain.com', {
+      await fetch('http://mydomain.com', {
          method: 'POST',
          body: '{"ID":"5"}'
       }).then((response) => {
