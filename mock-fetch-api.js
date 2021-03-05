@@ -17,12 +17,6 @@ PERFORMANCE OF THIS SOFTWARE.
 */
 
 
-/** MockFetch test support tool
- *
- *  Copyright (c) 2015 Adrian Geissel. All Rights Reserved.
- *  No unauthorised use without written Licence Agreement
- */
-
 (function(global) {
 
 require('isomorphic-fetch');
@@ -60,7 +54,6 @@ global.fetch = function(uri, options) {
                 // check that we have the expected headers
                 for(var jj=0; jj<criteria.headers.length; jj++) {
                   var expectedHeader = criteria.headers[jj];
-console.log(expectedHeader, options);
 
                   if(!options.headers || !options.headers.has(expectedHeader.header) || options.headers.get(expectedHeader.header) != expectedHeader.value) {
 
